@@ -18,6 +18,14 @@ enum Quotes {
         "That thing you're stuck on? Breaks are where the fix shows up.",
         "Wrists off the keyboard. Shake them out like you mean it.",
         "The screen will keep glowing without your supervision.",
+        "Your neck isn't supposed to bend like that. Fix it.",
+        "Shake out your hands. You've been gripping the mouse like it owes you money.",
+        "Refill the water. Yes, the one you forgot about an hour ago.",
+        "Close your eyes for ten seconds. Free reset, no reboot required.",
+        "Step outside for a second. The sun still exists.",
+        "That variable name you're agonizing over? Still bad in five minutes. Rest first.",
+        "Stretch your fingers. They've been doing all the work while you sat still.",
+        "Your posture just filed a second complaint. It's escalating.",
     ]
 
     static let longBreak = [
@@ -29,6 +37,11 @@ enum Quotes {
         "Your hips have been at 90 degrees for an hour. Go negotiate.",
         "Stretch, walk, drink water. In that order. Off you go.",
         "Ten minutes on your feet now, or a stiff neck at midnight. Choose.",
+        "Make a snack. A real one, not just more coffee.",
+        "Lie down for a minute. Horizontal is a valid posture.",
+        "Do a lap around the block. Your legs remember how, promise.",
+        "Text a friend something that isn't a screenshot of an error.",
+        "Look at literally anything that isn't backlit.",
     ]
 
     static func message(for phase: Phase) -> String {

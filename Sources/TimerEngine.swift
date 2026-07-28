@@ -129,7 +129,9 @@ final class TimerEngine: ObservableObject {
         guard phase != .idle, !isPaused else { return }
         remaining = max(deadline.timeIntervalSinceNow, 0)
 
-        if phase == .focus {
+        // A sleeping Mac stops the ticker for us; a locked screen does not. Without this the
+        // ledger would charge every minute spent at the lock screen as focused time.
+        if phase == .focus, awaySince == nil {
             focusBanked += tick
             Stats.shared.addFocus(tick)
         }

@@ -62,8 +62,10 @@ overlay.
 - **`remaining` is derived from `deadline`, not decremented.** `step()` recomputes it from
   wall-clock time every 0.5 s, so the countdown stays honest across drift and suspension.
 - **`focusBanked` and `Stats` accumulate by `tick` instead.** They count ticks that actually
-  ran, so time the app spent asleep never inflates focused time or long-break progress.
-  Keep that distinction — it is the difference between the clock and the ledger.
+  ran *and* were not spent away (`awaySince == nil`), so neither sleep nor a locked screen
+  inflates focused time or long-break progress. Keep that distinction — it is the difference
+  between the clock and the ledger. A tick running is not on its own proof you were there;
+  see **Away handling**.
 - **`phase == .idle` means stopped**, and nearly every public method early-returns on it.
 - Escalation lives in the two computed durations (`currentFocusDuration`,
   `currentBreakDuration`), not in the transitions. Change the rules there.
@@ -79,7 +81,33 @@ a single nap would be charged twice against `focusBanked`. If you add a third aw
 route it through the same pair.
 
 The rule: time away ≥ one break's length counts as having taken the break, so the focus
-block restarts clean. Shorter than that, the block is left alone.
+block restarts clean. Shorter than that, the block is left alone. The threshold is
+`currentBreakDuration`, which already resolves to the long break when one is due, so there is
+no separate long-break case to handle.
+
+### Three away cases, two mechanisms
+
+Whether the ticker survives depends on the case, and that is the part that misleads:
+
+| | signal | 0.5 s ticker | focus counted |
+|---|---|---|---|
+| screen on | none | runs | yes |
+| screen off / locked, **system awake** | `screenIsLocked` | **keeps running** | no — blocked by `awaySince` |
+| lid closed / menu sleep | `willSleep` (+ `screenIsLocked`) | **frozen by the OS** | no — no ticks exist |
+
+Only the middle row needs code. A sleeping Mac suspends the process, so `step()` never runs
+and there is nothing to suppress; a locked screen leaves the app fully alive and ticking. The
+`awaySince == nil` guard in `step()` looks redundant if you only picture the sleep case — it
+is not. Before it existed, every minute at the lock screen was recorded as focused time.
+
+Time away **shorter** than one break stops counting toward `Stats` but does *not* pause the
+countdown: `remaining` still derives from the wall-clock `deadline`. So a 30-minute block
+containing a two-minute lock still ends on schedule having banked 28 minutes. That divergence
+is deliberate — clock and ledger measure different things — and is not a bug to fix.
+
+Unverified: whether display-sleep-on-idle posts `screenIsLocked` on every configuration, or
+only `NSWorkspace.screensDidSleepNotification`, which nothing observes. Manual ⌃⌘Q definitely
+posts `screenIsLocked`. Confirm with a logger before assuming the idle path is covered.
 
 ## Testing time-based logic
 

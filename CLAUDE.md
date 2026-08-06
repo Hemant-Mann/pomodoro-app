@@ -152,6 +152,10 @@ keeps getting "cleaned up".
 - **The filled button in `DashboardView` carries its own green**, deliberately independent of
   the phase `accent`. When it used the accent, the `Start` button inherited the idle colour
   (`.secondary`), rendered gray, and read as disabled.
+- **`step()` only banks focus while `awaySince == nil`.** Reads as belt-and-braces next to the
+  sleep handling, because a sleeping Mac already stops the ticker. A *locked* Mac does not:
+  without the guard the ticker keeps firing at the lock screen and every minute of it lands in
+  `Stats` as focused time. See **Away handling**.
 - **Never drive a UI rebuild from the 0.5 s tick.** The original `NSMenu` was rebuilt on every
   tick and flickered or dismissed itself while open. The popover observes
   `engine.objectWillChange` instead; keep it that way.
@@ -161,8 +165,6 @@ keeps getting "cleaned up".
 - All persistence is `UserDefaults` under bundle id `com.jinwo.pomodoro`. Nuke it with
   `defaults delete com.jinwo.pomodoro` — that clears settings *and* all-time stats, which is
   the only way to reset all-time stats since the UI only resets today.
-- **This directory is not a git repository.** There is a `.gitignore` (`build/`, `.DS_Store`)
-  but no history, so there is nothing to diff against and no commit to make unless asked.
 - Changing the focus duration in Preferences calls `resetCycle()`, restarting the current
   block. That is deliberate.
 - The popover open/close path is the one flow never exercised end-to-end; eyeball it after

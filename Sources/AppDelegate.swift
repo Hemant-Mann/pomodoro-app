@@ -24,6 +24,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         engine.onBreakEnded = { [weak self] in
             self?.overlay.hide()
         }
+        engine.onBreakUpcoming = { [weak self] phase in
+            self?.notifyUpcoming(phase)
+        }
 
         // Keep the menu bar clock in step with the timer.
         engine.objectWillChange
@@ -103,6 +106,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.engine.skipBreak()
         }
         notify(title: Quotes.notificationTitle(for: phase), body: message)
+    }
+
+    private func notifyUpcoming(_ phase: Phase) {
+        let minutes = phase == .longBreak ? 2 : 1
+        let kind = phase == .longBreak ? "Long break" : "Break"
+        notify(title: "Almost break time", body: "\(kind) in \(minutes) minute\(minutes == 1 ? "" : "s").")
     }
 
     // MARK: - Notifications

@@ -20,6 +20,9 @@ struct BreakOverlay: View {
     let onSkip: () -> Void
 
     @State private var appeared = false
+    /// Picked once and held for the whole break — `body` re-runs every tick, and re-rolling
+    /// here would resize the speech bubble underneath itself each time.
+    @State private var cow = Quotes.randomCow()
 
     private var isLong: Bool { engine.phase == .longBreak }
 
@@ -62,7 +65,7 @@ struct BreakOverlay: View {
 
                 ring
 
-                Text(Quotes.cowsay(message))
+                Text(Quotes.cowsay(message, cow: cow))
                     .font(.system(size: 13, weight: .regular, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .lineSpacing(2)

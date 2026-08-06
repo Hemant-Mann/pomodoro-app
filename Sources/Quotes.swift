@@ -79,8 +79,14 @@ enum Quotes {
         """,
     ]
 
-    /// Renders text in a cowsay speech bubble. Wraps at `width` columns.
-    static func cowsay(_ text: String, width: Int = 42) -> String {
+    static func randomCow() -> String {
+        cows.randomElement() ?? cows[0]
+    }
+
+    /// Renders text in a cowsay speech bubble. Wraps at `width` columns. `cow` is passed in
+    /// rather than picked here so a caller re-rendering on every tick doesn't reroll it and
+    /// resize the bubble underneath itself.
+    static func cowsay(_ text: String, cow: String, width: Int = 42) -> String {
         let lines = wrap(text, width: width)
         let inner = lines.map(\.count).max() ?? 0
 
@@ -101,7 +107,6 @@ enum Quotes {
         }
 
         out += "\n " + String(repeating: "-", count: inner + 2)
-        let cow = cows.randomElement() ?? cows[0]
         out += "\n" + cow.split(separator: "\n").map { "        " + $0 }.joined(separator: "\n")
         return out
     }

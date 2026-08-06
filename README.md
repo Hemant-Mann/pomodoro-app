@@ -22,7 +22,9 @@ it for good.
 ## How it works
 
 Focus for **30 minutes**, then a full-screen break overlay appears (plus a notification)
-with a **3 minute** countdown and a **Skip this break** button.
+with a **3 minute** countdown and a **Skip this break** button. You also get a heads-up
+notification before the break starts — 1 minute out for a short break, 2 minutes out for a
+long one.
 
 **Skipping makes the next round harder.** Each consecutive skip halves the next focus block
 and doubles the next break:
@@ -34,7 +36,10 @@ and doubles the next break:
 | 2              | 7.5 min     | 12 min |
 | 3+             | 5 min (floor) | 15 min (cap) |
 
-Sitting a break out to the end resets you to 30/3.
+Sitting a break out to the end resets you to 30/3 — and skipping after you've already sat
+through at least half of it counts the same way. Skip a 10 minute break at the 7 minute mark
+and it's recorded as taken, no escalation; skip in the first few minutes and the usual penalty
+applies.
 
 **Every hour of focus time earns a 10 minute break** to stand up and walk around. The hour is
 counted from actual focus time, so pausing doesn't cheat it. If a break is due as both a long

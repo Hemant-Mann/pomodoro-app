@@ -41,9 +41,14 @@ final class TimerEngine: ObservableObject {
     private let tick: TimeInterval = 0.5
     /// When the Mac slept or the screen locked, if we haven't come back yet.
     private var awaySince: Date?
+    /// Whether the heads-up notification has fired for the focus block in progress.
+    private var upcomingNotified = false
 
     var onBreakStarted: ((Phase) -> Void)?
     var onBreakEnded: (() -> Void)?
+    /// Fired once per focus block, shortly before the break: 1 minute out for a short
+    /// break, 2 minutes out for a long one.
+    var onBreakUpcoming: ((Phase) -> Void)?
 
     private var settings: Settings { .shared }
 
@@ -123,6 +128,7 @@ final class TimerEngine: ObservableObject {
         remaining = duration
         deadline = Date().addingTimeInterval(duration)
         isPaused = false
+        upcomingNotified = false
     }
 
     private func step() {
@@ -134,6 +140,14 @@ final class TimerEngine: ObservableObject {
         if phase == .focus, awaySince == nil {
             focusBanked += tick
             Stats.shared.addFocus(tick)
+        }
+
+        if phase == .focus, !upcomingNotified {
+            let headsUp: TimeInterval = isLongBreakDue ? 120 : 60
+            if remaining <= headsUp {
+                upcomingNotified = true
+                onBreakUpcoming?(isLongBreakDue ? .longBreak : .shortBreak)
+            }
         }
 
         guard remaining <= 0 else { return }
@@ -163,8 +177,14 @@ final class TimerEngine: ObservableObject {
     }
 
     /// The break was dismissed early: shorten the next focus, lengthen the next break.
+    /// Skipping after already sitting through at least half of it counts as taking it —
+    /// no escalation, same as riding the break out to the end.
     func skipBreak() {
         guard phase.isBreak else { return }
+        guard blockDuration - remaining < blockDuration / 2 else {
+            completeBreak()
+            return
+        }
         skipStreak = min(skipStreak + 1, 6)
         Stats.shared.recordBreakSkipped()
         onBreakEnded?()

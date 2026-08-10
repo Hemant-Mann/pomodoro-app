@@ -49,11 +49,6 @@ enum Quotes {
         return pool.randomElement() ?? "Take a break."
     }
 
-    /// Short line for the notification banner.
-    static func notificationTitle(for phase: Phase) -> String {
-        phase == .longBreak ? "Time to stretch your legs" : "Break time"
-    }
-
     // MARK: - cowsay
 
     private static let cows = [

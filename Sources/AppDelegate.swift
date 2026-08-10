@@ -4,7 +4,7 @@ import UserNotifications
 import Combine
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
     private let overlay = OverlayController()
@@ -100,12 +100,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Break presentation
 
+    /// No notification here: the overlay covers every screen at `.screenSaver` level, so a
+    /// banner announcing the break would be drawn underneath the thing it is announcing.
     private func presentBreak(_ phase: Phase) {
         let message = Quotes.message(for: phase)
         overlay.show(message: message) { [weak self] in
             self?.engine.skipBreak()
         }
-        notify(title: Quotes.notificationTitle(for: phase), body: message)
     }
 
     private func notifyUpcoming(_ phase: Phase) {
@@ -118,10 +119,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func requestNotificationPermission() {
         guard Bundle.main.bundleIdentifier != nil else { return }
+        // Must be assigned before the app finishes launching, or willPresent is never called.
+        UNUserNotificationCenter.current().delegate = self
         UNUserNotificationCenter.current()
             .requestAuthorization(options: [.alert, .sound]) { [weak self] granted, _ in
                 Task { @MainActor in self?.notificationsAllowed = granted }
             }
+    }
+
+    /// macOS hides a banner from whichever app is frontmost unless its delegate asks for
+    /// one. Pomodoro is frontmost more often than it looks — the overlay and the popover
+    /// both call `NSApp.activate` — so without this the notification is posted, the sound
+    /// plays, and no banner is ever drawn.
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound])
     }
 
     private func notify(title: String, body: String) {

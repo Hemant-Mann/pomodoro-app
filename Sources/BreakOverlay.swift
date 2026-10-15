@@ -2,6 +2,14 @@ import SwiftUI
 import AppKit
 
 /// Real desktop blur behind the overlay.
+/// Stands in for `@State`, which the macOS 27 SDK turned into a macro the Command Line Tools
+/// can't expand. Only safe in a view that is a hosting root, so it is built exactly once.
+@MainActor
+final class Box<Value>: ObservableObject {
+    @Published var value: Value
+    init(_ value: Value) { self.value = value }
+}
+
 struct VisualEffectBackground: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
@@ -19,10 +27,10 @@ struct BreakOverlay: View {
     let message: String
     let onSkip: () -> Void
 
-    @State private var appeared = false
+    @ObservedObject private var appeared = Box(false)
     /// Picked once and held for the whole break — `body` re-runs every tick, and re-rolling
     /// here would resize the speech bubble underneath itself each time.
-    @State private var cow = Quotes.randomCow()
+    @ObservedObject private var cow = Box(Quotes.randomCow())
 
     private var isLong: Bool { engine.phase == .longBreak }
 
@@ -65,7 +73,7 @@ struct BreakOverlay: View {
 
                 ring
 
-                Text(Quotes.cowsay(message, cow: cow))
+                Text(Quotes.cowsay(message, cow: cow.value))
                     .font(.system(size: 13, weight: .regular, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .lineSpacing(2)
@@ -85,11 +93,11 @@ struct BreakOverlay: View {
                 .help("Next focus block gets shorter and the next break gets longer.")
             }
             .padding(60)
-            .scaleEffect(appeared ? 1 : 0.94)
-            .opacity(appeared ? 1 : 0)
+            .scaleEffect(appeared.value ? 1 : 0.94)
+            .opacity(appeared.value ? 1 : 0)
         }
         .onAppear {
-            withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) { appeared = true }
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) { appeared.value = true }
         }
     }
 

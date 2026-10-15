@@ -42,8 +42,8 @@ final class Settings: ObservableObject {
 
     /// Focus never shrinks below this, no matter how many breaks are skipped.
     let minFocusMinutes = 5
-    /// A short break never grows past this, no matter how many breaks are skipped.
-    let maxBreakMinutes = 15
+    /// No break ever runs past this — not an escalated one, not a long one.
+    let maxBreakMinutes = 10
 
     private static func load(_ key: String) -> Int {
         let defaults: [String: Int] = [

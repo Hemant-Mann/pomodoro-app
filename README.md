@@ -33,8 +33,8 @@ and doubles the next break:
 | -------------- | ----------- | ----- |
 | 0              | 30 min      | 3 min |
 | 1              | 15 min      | 6 min |
-| 2              | 7.5 min     | 12 min |
-| 3+             | 5 min (floor) | 15 min (cap) |
+| 2              | 7.5 min     | 10 min (cap) |
+| 3+             | 5 min (floor) | 10 min (cap) |
 
 Sitting a break out to the end resets you to 30/3 — and skipping after you've already sat
 through at least half of it counts the same way. Skip a 10 minute break at the 7 minute mark
@@ -50,6 +50,8 @@ If the Mac sleeps or the screen is locked for longer than a break, that counts a
 the focus block starts over when you come back instead of ambushing you. Walking away for 5
 minutes with 10 minutes left gets you a fresh 30, not the 10 you left behind. A quick lock
 that's shorter than a break leaves the block running where it was.
+After 20 minutes away the app stops its timer entirely, so it does no work while the Mac
+sleeps or sits at the lock screen; it picks up again the moment you come back.
 
 ## Menu bar
 
@@ -75,7 +77,7 @@ Preferences…             Quit
 ```
 
 **Pause** holds the current block where it is. **Break** starts a break early — it counts as
-an earned break, not a skip. **Stop** ends the session: the timer goes idle and the cycle
+an earned break, not a skip, so it is always the plain length — a recent skip doesn't stretch it. **Stop** ends the session: the timer goes idle and the cycle
 starts clean when you press **Start**. Today's numbers survive a stop, a quit, and a restart.
 
 During a break the middle button becomes **Skip**, matching the overlay's button.
@@ -88,8 +90,8 @@ accrues while a focus block is actually running, so pausing or stopping doesn't 
 | Setting | Range | Default |
 | ------- | ----- | ------- |
 | Focus block | 5–120 min | 30 |
-| Short break | 1–30 min | 3 |
-| Long break | 3–60 min | 10 |
+| Short break | 1–10 min | 3 |
+| Long break | 3–10 min | 10 |
 | Long break every | 20–240 min of focus | 60 |
 
 Also here: **Start at login**, and a **Reset** for today's stats. Changing the focus length

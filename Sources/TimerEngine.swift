@@ -41,6 +41,9 @@ final class TimerEngine: ObservableObject {
     private let tick: TimeInterval = 0.5
     /// When the Mac slept or the screen locked, if we haven't come back yet.
     private var awaySince: Date?
+    /// Away this long and the ticker shuts down until you return. Anything past the longest
+    /// break gets reset on return anyway, so there is nothing left for it to do.
+    private let dormantAfter: TimeInterval = 20 * 60
     /// Whether the heads-up notification has fired for the focus block in progress.
     private var upcomingNotified = false
 
@@ -63,14 +66,13 @@ final class TimerEngine: ObservableObject {
         return max(halved, Double(settings.minFocusMinutes) * 60)
     }
 
-    /// Breaks double for each consecutive skipped break, capped at `maxBreakMinutes`.
-    /// When a long break is owed, it is never shorter than `longBreakMinutes`.
+    /// Breaks double for each consecutive skipped break. When a long break is owed, it is never
+    /// shorter than `longBreakMinutes`. Either way nothing exceeds `maxBreakMinutes`.
     var currentBreakDuration: TimeInterval {
         let base = Double(settings.breakMinutes) * 60
-        let doubled = min(base * pow(2, Double(min(skipStreak, 6))),
-                          Double(settings.maxBreakMinutes) * 60)
-        guard isLongBreakDue else { return doubled }
-        return max(doubled, Double(settings.longBreakMinutes) * 60)
+        var duration = base * pow(2, Double(min(skipStreak, 6)))
+        if isLongBreakDue { duration = max(duration, Double(settings.longBreakMinutes) * 60) }
+        return min(duration, Double(settings.maxBreakMinutes) * 60)
     }
 
     var isLongBreakDue: Bool {
@@ -93,10 +95,7 @@ final class TimerEngine: ObservableObject {
 
     /// Called once at launch: installs the ticker and begins the first focus block.
     func boot() {
-        ticker = Timer.scheduledTimer(withTimeInterval: tick, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.step() }
-        }
-        ticker?.tolerance = 0.1
+        startTicker()
         observeSleep()
         observeLock()
         startFocus()
@@ -131,7 +130,23 @@ final class TimerEngine: ObservableObject {
         upcomingNotified = false
     }
 
+    private func startTicker() {
+        guard ticker == nil else { return }
+        ticker = Timer.scheduledTimer(withTimeInterval: tick, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.step() }
+        }
+        ticker?.tolerance = 0.1
+    }
+
     private func step() {
+        // Power Nap and a locked-but-awake Mac both keep this ticker alive. Left running it fires
+        // breaks at the lock screen and redraws full-screen overlays all night, so go quiet.
+        if let start = awaySince, Date().timeIntervalSince(start) >= dormantAfter {
+            ticker?.invalidate()
+            ticker = nil
+            if phase.isBreak { onBreakEnded?() }
+            return
+        }
         guard phase != .idle, !isPaused else { return }
         remaining = max(deadline.timeIntervalSinceNow, 0)
 
@@ -191,9 +206,11 @@ final class TimerEngine: ObservableObject {
         startFocus()
     }
 
-    /// Jump straight to a break from the menu bar. Counts as a normal, earned break.
+    /// Jump straight to a break from the menu bar. Counts as a normal, earned break, so it is
+    /// the plain length: a break you chose to take is not padded by the skips before it.
     func breakNow() {
         guard phase == .focus else { return }
+        skipStreak = 0
         beginBreak()
     }
 
@@ -263,6 +280,7 @@ final class TimerEngine: ObservableObject {
     private func returnFromAway() {
         guard let start = awaySince else { return }
         awaySince = nil
+        startTicker()
         guard phase != .idle else { return }
         let away = Date().timeIntervalSince(start)
         guard away >= currentBreakDuration else { return }

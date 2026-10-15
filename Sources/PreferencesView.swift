@@ -4,24 +4,24 @@ import ServiceManagement
 struct PreferencesView: View {
     @ObservedObject private var settings = Settings.shared
     @ObservedObject private var stats = Stats.shared
-    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
-    @State private var loginError: String?
+    @ObservedObject private var launchAtLogin = Box(SMAppService.mainApp.status == .enabled)
+    @ObservedObject private var loginError = Box<String?>(nil)
 
     var body: some View {
         Form {
             Section {
                 stepper("Focus block", value: $settings.focusMinutes, range: 5...120)
-                stepper("Short break", value: $settings.breakMinutes, range: 1...30)
+                stepper("Short break", value: $settings.breakMinutes, range: 1...10)
             }
             Section {
-                stepper("Long break", value: $settings.longBreakMinutes, range: 3...60)
+                stepper("Long break", value: $settings.longBreakMinutes, range: 3...10)
                 stepper("Long break every", value: $settings.longBreakIntervalMinutes,
                         range: 20...240, step: 10)
             }
             Section {
-                Toggle("Start at login", isOn: $launchAtLogin)
-                    .onChange(of: launchAtLogin) { _, wanted in setLoginItem(wanted) }
-                if let loginError {
+                Toggle("Start at login", isOn: $launchAtLogin.value)
+                    .onChange(of: launchAtLogin.value) { _, wanted in setLoginItem(wanted) }
+                if let loginError = loginError.value {
                     Text(loginError)
                         .font(.caption)
                         .foregroundStyle(.red)
@@ -59,10 +59,10 @@ struct PreferencesView: View {
             } else {
                 try SMAppService.mainApp.unregister()
             }
-            loginError = nil
+            loginError.value = nil
         } catch {
-            loginError = error.localizedDescription
-            launchAtLogin = SMAppService.mainApp.status == .enabled
+            loginError.value = error.localizedDescription
+            launchAtLogin.value = SMAppService.mainApp.status == .enabled
         }
     }
 

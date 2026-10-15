@@ -32,6 +32,8 @@ These are load-bearing. Do not "modernise" past them without being asked:
   CLT SDK does ship SwiftUI/AppKit/UserNotifications, so nothing more is needed.
 - **No third-party dependencies.** Anything that would need Homebrew or SwiftPM gets
   written by hand instead — that is why `Quotes.swift` contains a 40-line cowsay.
+- **No `@State`** (or other SwiftUI macros). In the macOS 27 SDK it is a macro whose plugin
+  ships only with Xcode, so the CLT build fails on it. Use `Box` from `BreakOverlay.swift`.
 - `build.sh` targets `arm64-apple-macosx14.0`: Apple Silicon, macOS 14+. Add an x86_64
   slice only if asked.
 - `Entry.swift` uses `@main enum` + `-parse-as-library`. Top-level code in a `main.swift`

@@ -1,7 +1,6 @@
 # Pomodoro
 
 A menu bar break reminder for macOS. Native Swift, no dependencies, ~500 KB.
-
 Needs macOS 14+ on Apple Silicon, and the Xcode Command Line Tools to build — not Xcode.
 
 ```bash
@@ -52,6 +51,10 @@ minutes with 10 minutes left gets you a fresh 30, not the 10 you left behind. A 
 that's shorter than a break leaves the block running where it was.
 After 20 minutes away the app stops its timer entirely, so it does no work while the Mac
 sleeps or sits at the lock screen; it picks up again the moment you come back.
+
+The break message arrives in a cowsay bubble, with a different animal each break. With
+Homebrew's `cowsay` installed you get its whole cast (`blowfish`, `elephant`, `stegosaurus`, …);
+without it, a few built-in cows stand in.
 
 ## Menu bar
 
@@ -122,5 +125,5 @@ login item work.
 | `Sources/AppDelegate.swift` | menu bar item, popover, notifications |
 | `Sources/BreakOverlay.swift` | the break screen |
 | `Sources/OverlayController.swift` | full-screen windows, one per display |
-| `Sources/Quotes.swift` | break messages + a small cowsay |
+| `Sources/Quotes.swift` | break messages, cowsay (Homebrew's if installed, else built in) |
 | `Sources/Settings.swift` | durations, persisted in UserDefaults |

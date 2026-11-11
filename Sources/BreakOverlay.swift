@@ -23,14 +23,12 @@ struct VisualEffectBackground: NSViewRepresentable {
 
 struct BreakOverlay: View {
     @ObservedObject var engine = TimerEngine.shared
-    /// Held steady for the whole break so the message doesn't reshuffle every tick.
-    let message: String
+    /// Rendered once per break — `body` re-runs every tick, and re-rolling the message or
+    /// the animal here would reshuffle and resize the bubble underneath itself.
+    let art: String
     let onSkip: () -> Void
 
     @ObservedObject private var appeared = Box(false)
-    /// Picked once and held for the whole break — `body` re-runs every tick, and re-rolling
-    /// here would resize the speech bubble underneath itself each time.
-    @ObservedObject private var cow = Box(Quotes.randomCow())
 
     private var isLong: Bool { engine.phase == .longBreak }
 
@@ -73,12 +71,15 @@ struct BreakOverlay: View {
 
                 ring
 
-                Text(Quotes.cowsay(message, cow: cow.value))
+                Text(art)
                     .font(.system(size: 13, weight: .regular, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .lineSpacing(2)
                     .multilineTextAlignment(.leading)
-                    .fixedSize()
+                    // Some cowfiles are 40+ lines. Shrink the animal to the room left over
+                    // rather than letting it push Skip off the bottom of the screen.
+                    .minimumScaleFactor(0.1)
+                    .layoutPriority(-1)
 
                 Button(action: onSkip) {
                     Text("Skip this break")

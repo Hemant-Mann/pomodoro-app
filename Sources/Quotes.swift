@@ -72,16 +72,109 @@ enum Quotes {
              (__)    )\\
                 ||--|| *
         """,
+        // The rest are cowsay's own -f blowfish / elephant / stegosaurus, transcribed by hand.
+        #"""
+        \
+         \
+                       |    .
+                   .   |L  /|
+               _ . |\ _| \--+._/| .
+              / ||\| Y J  )   / |/| ./
+             J  |)'( |        ` F`.'/
+           -<|  F         __     .-<
+             | /       .-'. `.  /-. L___
+             J \      <    \  | | O\|.-'
+           _J \  .-    \/ O | | \  |F
+          '-F  -<_.     \   .-'  `-' L__
+         __J  _   _.     >-'  )._.   |-'
+         `-|.'   /_.           \_|   F
+           /.-   .                _.<
+          /'    /.'             .'  `\
+           /L  /'   |/      _.-'-\
+          /'J       ___.---'\|
+            |\  .--' V  | `. `
+            |/`. `-.     `._)
+               / .-.\
+               \ (  `\
+                `.\
+        """#,
+        #"""
+        \     /\  ___  /\
+         \   // \/   \/ \\
+            ((    O O    ))
+             \\ /     \ //
+              \/  | |  \/
+               |  | |  |
+               |  | |  |
+               |   o   |
+               | |   | |
+               |m|   |m|
+        """#,
+        #"""
+        \                             .       .
+         \                           / `.   .' "
+          \                  .---.  <    > <    >  .---.
+           \                 |    \  \ - ~ ~ - /  /    |
+                 _____          ..-~             ~-..-~
+                |     |   \~~~\.'                    `./~~~/
+               ---------   \__/                        \__/
+              .'  O    \     /               /       \  "
+             (_____,    `._.'               |         }  \/~~~/
+              `----.          /       }     |        /    \__/
+                    `-.      |       /      |       /      `. ,~~|
+                        ~-.__|      /_ - ~ ^|      /- _      `..-'
+                             |     /        |     /     ~-.     `-. _  _  _
+                             |_____|        |_____|         ~ - . _ _ _ _ _>
+        """#,
     ]
 
-    static func randomCow() -> String {
-        cows.randomElement() ?? cows[0]
+    /// A GUI app doesn't get the shell's PATH, so look where Homebrew puts it.
+    private static let cowsayPath = ["/opt/homebrew/bin/cowsay", "/usr/local/bin/cowsay"]
+        .first(where: FileManager.default.isExecutableFile)
+
+    /// Cowfiles that don't belong on a break screen.
+    private static let unsuitable: Set = ["bong", "head-in", "kiss", "mutilated", "surgery"]
+
+    /// Older cowsays print a "Cow files in …:" header before the names; drop it.
+    private static let systemCows: [String] = cowsayPath
+        .flatMap { run($0, ["-l"]) }?
+        .split(whereSeparator: \.isWhitespace).map(String.init)
+        .filter { !$0.contains(":") && !$0.contains("/") && !unsuitable.contains($0) } ?? []
+
+    @MainActor private static var lastCow = ""
+
+    /// Never the same animal twice running, so each break visibly gets a new one.
+    @MainActor private static func fresh(_ pool: [String]) -> String {
+        let pick = pool.filter { $0 != lastCow }.randomElement() ?? pool[0]
+        lastCow = pick
+        return pick
     }
 
-    /// Renders text in a cowsay speech bubble. Wraps at `width` columns. `cow` is passed in
-    /// rather than picked here so a caller re-rendering on every tick doesn't reroll it and
-    /// resize the bubble underneath itself.
-    static func cowsay(_ text: String, cow: String, width: Int = 42) -> String {
+    /// The whole bubble, rendered once per break. Uses the real cowsay with a random `-f`
+    /// when it is installed, and the hand-drawn cows above when it isn't or it fails.
+    @MainActor static func render(_ text: String) -> String {
+        if let path = cowsayPath, !systemCows.isEmpty,
+           let out = run(path, ["-W", "42", "-f", fresh(systemCows), text]) {
+            return out.trimmingCharacters(in: .newlines)
+        }
+        return cowsay(text, cow: fresh(cows))
+    }
+
+    private static func run(_ path: String, _ args: [String]) -> String? {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: path)
+        p.arguments = args
+        let pipe = Pipe()
+        p.standardOutput = pipe
+        p.standardError = FileHandle.nullDevice
+        guard (try? p.run()) != nil else { return nil }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        return p.terminationStatus == 0 ? String(decoding: data, as: UTF8.self) : nil
+    }
+
+    /// Renders text in a cowsay speech bubble. Wraps at `width` columns.
+    private static func cowsay(_ text: String, cow: String, width: Int = 42) -> String {
         let lines = wrap(text, width: width)
         let inner = lines.map(\.count).max() ?? 0
 

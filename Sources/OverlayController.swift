@@ -16,6 +16,7 @@ final class OverlayController {
 
     func show(message: String, onSkip: @escaping () -> Void) {
         guard windows.isEmpty else { return }
+        let art = Quotes.render(message)
 
         for screen in NSScreen.screens {
             let window = OverlayWindow(
@@ -34,7 +35,7 @@ final class OverlayController {
             window.ignoresMouseEvents = false
             window.isReleasedWhenClosed = false
             window.contentView = NSHostingView(
-                rootView: BreakOverlay(message: message, onSkip: onSkip)
+                rootView: BreakOverlay(art: art, onSkip: onSkip)
             )
             window.setFrame(screen.frame, display: true)
             window.orderFrontRegardless()

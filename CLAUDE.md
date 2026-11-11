@@ -32,6 +32,9 @@ These are load-bearing. Do not "modernise" past them without being asked:
   CLT SDK does ship SwiftUI/AppKit/UserNotifications, so nothing more is needed.
 - **No third-party dependencies.** Anything that would need Homebrew or SwiftPM gets
   written by hand instead — that is why `Quotes.swift` contains a 40-line cowsay.
+  The one exception is optional at runtime: if Homebrew's `cowsay` is installed, the break
+  bubble shells out to it with a random `-f`; if it is missing or fails, the hand-drawn cows
+  are used. Nothing at build time may depend on it, and the app must work without it.
 - **No `@State`** (or other SwiftUI macros). In the macOS 27 SDK it is a macro whose plugin
   ships only with Xcode, so the CLT build fails on it. Use `Box` from `BreakOverlay.swift`.
 - `build.sh` targets `arm64-apple-macosx14.0`: Apple Silicon, macOS 14+. Add an x86_64
